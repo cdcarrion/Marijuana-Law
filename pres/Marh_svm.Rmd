@@ -1,0 +1,488 @@
+---
+title: "El Efecto de la Legalización de la Marihuana sobre la Criminalidad en los Estados Unidos"
+subtitle: Impacto de Política Pública
+author: Cristian Carrión
+institute: Escuela Politécnica Nacional
+#titlegraphic: C:/Users/Usuario/Documents/Doc_espan/EPN_LOGO.PNG
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+fontsize: 10pt
+appendixletter: A
+output:
+ beamer_presentation:
+    template: C:/Users/Usuario/Documents/svm-r-markdown-templates-master/svm-latex-beamer.tex
+    keep_tex: true
+# toc: true
+    slide_level: 3
+    fig_caption: true
+make149: true
+header-includes:
+  - \usepackage[spanish]{babel}
+  - \usepackage{caption}
+---
+
+<style>
+slides > slide.backdrop {
+  background: white;
+  border-bottom: 0px;
+  box-shadow: 0 0 0;
+}
+
+
+slides > slide {
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  border-bottom: 3px solid  #F66733;
+  box-shadow:  0 3px 0 #522D80;
+
+}
+
+.title-slide hgroup h1 {
+  color: #522D80;
+}
+
+
+
+h2 {
+
+  color: #522D80;
+}
+
+slides > slide.dark {
+  background: #522D80 !important;
+  border-bottom: 0;
+  box-shadow: 0 0 0;
+}
+
+.segue h2 {
+  color: white;
+}
+
+slides > slide.title-slide {
+  border-bottom: 0;
+  box-shadow: 0 0 0;
+}
+
+ol, ul {
+
+padding-bottom: 10px;
+
+}
+
+</style>
+
+
+
+```{r setup, include=FALSE, cache=FALSE, eval=TRUE}
+# knitr::opts_chunk$set(cache=FALSE, kfigr.prefix=TRUE, kfigr.link=TRUE) 
+
+library(sqldf)
+library(knitr) 
+library(kfigr)
+library(pander)
+library(stargazer)
+library(xtable)
+library(plyr)
+# library(knitr)
+library(lme4)
+library(corrplot)
+library(optimx)
+library(nloptr)
+library(ggplot2)
+library(gridExtra)
+library(ordinal)
+library(texreg)
+library(cem)
+library(arm)
+library(broom)
+library(kableExtra)
+library(extrafont)
+
+library(fitdistrplus)
+library(dplyr)
+library(tidyr)
+library(panelView)
+library(papaja)
+library(rddtools)
+library(boot)
+# library(grid)
+# library(gridExtra)
+
+crime_t <- read.csv("C:/Users/Usuario/Documents/Doc español/Marihuana_law/data/crime_t.csv", 
+                  stringsAsFactors = T, 
+                  sep = ";")  
+
+proj <- read.csv("C:/Users/Usuario/Documents/Doc español/Marihuana_law/data/Data_final.csv", 
+                   stringsAsFactors = T, 
+                   sep = ",")
+
+proj <- filter(proj, Year >= 1980 & Year <= 2014)
+```
+
+# Introducción     
+
+### Objetivo
+
+ - La **Legalización de la Marihuana (LM)** para uso recreativo en los EE.UU. sigue siendo un tema muy debatido a medida que más estados legalizan la marihuana para uso recreativo y con fines médicos.
+
+ - Aquellos que apoyan la LM se centran debido a la reducción en el mercado y la actividad delictiva asociada con ella 
+ 
+ - Determinar si la LM tiene el efecto de aumentar el crimen
+
+*El propósito de este análisis de datos no es explorar si existe una relación entre la legalización y
+despenalización de la marihuana y su uso, sino más bien observar la relación, si existe, entre las leyes de la
+marihuana y las tasas de delincuencia*
+
+###
+
+```{r graph1, eval=TRUE, echo=FALSE, , fig.width=11, fig.height=10, cache=TRUE, fig.align = "center"}
+
+m_plot <- crime_t %>%
+  filter(Year >= 1980) %>%
+  dplyr::select(Year, 
+         Robbery, 
+         Aggravated.assault) %>%
+  gather(key = "Variable", value = "Observaciones", -Year)
+
+ggplot(m_plot, aes(x = Year, y = Observaciones)) + 
+  geom_line(aes(color = Variable, linetype = Variable)) + 
+    annotate("text", x=1997, y = 950000, 
+           label = "Alaska \n1998") +
+  annotate("text", x=1998, y = 650000, 
+           label = "Oregon \n1998'") +
+  annotate("text", x=2000, y = 800000, 
+           label = "Hawaii \n2000'") +
+  annotate("text", x=2003, y = 400000, 
+           label = "Montana \n2004'") +
+  annotate("text", x=2008, y = 500000, 
+           label = "Michigan \n2008'") +
+  annotate("text", x=2012, y = 900000, 
+           label = "Maryland \n2014'") +
+  annotate("text", x=2012, y = 670000, 
+           label = "New York \n2014'") +
+  theme_bw() +
+  theme(title = element_text(face="italic", size=14, hjust=0)) +
+  geom_vline(aes(xintercept = 1998, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 1999, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2000, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2001, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2004, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2005, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2007, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2008, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2010, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2011, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2012, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2013, linetype = "dotted"))+
+  geom_vline(aes(xintercept = 2014, linetype = "dotted"))+
+  theme(axis.title.x = element_text(face="plain", size=14, hjust=.5)) +
+  theme(axis.title.y = element_text(face="plain", size=14, hjust=.5)) +
+  theme(legend.title = element_text(face="plain", size=14, hjust=.5)) +
+  labs(caption = "\n Nota: La variable Asesinato se omitió para reducir espacio \n Fuente: FBI’s Uniform Crime Reporting \n Gráfico realizdo por Cristian Carrión") +
+  ggtitle("Criminalidad Neta en los EE.UU.")
+```
+
+### Objetivo
+
+![](C:/Users/Usuario/Documents/Doc_espan/tb1.png){width=82%}
+
+# Métodos
+
+### Datos y medidas
+
+#### Variable Dependiente
+
+(Asesinato y homicidio no negligente, Violación, Robo y Asalto agravado) entre 1980 y 2014 se obtuvieron del *FBI’s Uniform Crime Reporting* [(UCR)](https://bjs.gov/)
+
+#### Variable Independiente
+
+El año de inicio de la LM se obtuvo del sitio web oficial [NORML](https://norml.org/states). La variable de Dummy representa el número de años que la ley ha estado vigente
+
+#### Variables de Control 
+
+  - El porcentaje de la fuerza laboral civil desempleada de cada estado, se obtuvo del sitio web de la Oficina de Estadísticas Laborales ([BLS](https://www.bls.gov/lau/))
+  - La tasa de empleo total, se obtuvo del sitio web de la Oficina de Estadísticas Laborales ([BLS](https://www.bls.gov/sae/))
+  - El porcentaje de la población que vive por debajo del umbral de pobreza, se obtuvo de la [Oficina del Censo](https://www.census.gov/topics/income-poverty/poverty.html)
+  - La tasa de consumo de cerveza per cápita
+  
+### Plan de Análisis
+
+Un diseño de de panel de efectos aleatorios, para la LM en los 50 estados durante el período de observación de 22 años
+
+```{r summiss, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F}
+Miss <- data.frame(var=names(proj), miss=apply(proj, 2, function(col)sum(is.na(col))/length(col)))
+rownames(Miss) <- c()
+Miss <- subset(Miss, !(var == "Year" | var == "State" | var == "Population" | var == "Revised.rape..2"  | var == "Revised.rape..2"  | var == "Law"  | var == "Fips"  | var == "Revised.rape..2" | var == "Violent.crime.total" | var == "Type"))
+Miss$miss <- with(Miss, paste(sprintf("%.2f", round(miss*100, 2)),"%", sep=""))
+Miss$var <- c("Homicidio", "Violación", "Robo", "Asalto Agravado",
+              "Tasa de Pobreza", "Tasa de Empleo", "Tasa de Desempleo", "Galones de cerbeza per capita", 
+              "Post-Ley")
+Misst <- capture.output(
+  stargazer(Miss, type="latex", label="tab:misst", summary=FALSE, rownames=F, 
+            title="Porcentaje de los datos faltantes antes de la imputación",
+            header=FALSE
+            ))
+Misst[5] <- "\\begin{tabular}{@{\\extracolsep{5pt}} lc} " 
+Misst[8] <- "\\textbf{Variables} & \\textbf{\\% Faltantes} \\\\ "
+cat(Misst, sep='\n') 
+```
+
+# Resultados
+
+## Resultados Preliminares
+
+### Resultados Preliminares
+
+#### Tendencia (lado izquierdo) 
+Criminalidad por año, para los estados que no aprobaron la LM. Por lo tanto, 
+
+#### Tendencia (lado derecho) 
+Los estados que aprobaron la LM contribuyen la recta hasta el año hasta el año vigente de aprobación de la LM.
+
+![Regresión Discontinua de la tasa de Criminalidad en función de los años](C:/Users/Usuario/Documents/Doc_espan/pol_imp3.png){width=50%}
+
+### Resultados Preliminares
+
+La recta del lado derecho revela estos estados experimentaron una reducción de crimen gradualmente para los estados de California y New Jersey a comparación del segundo estado con mayor población Texas en donde la LM es Ilegal.
+
+
+Estos **RESULTADOS PRELIMINARES** sugieren que la LM puede tener un efecto de reducción del crimen, pero hay que tomar en cuenta que otros factores pueden estar relacionados con las tendencias de las series de tiempo que no se han tomado en cuenta para estas regresiones. Cuadro A.4
+
+### Regresión
+
+![](C:/Users/Usuario/Documents/Doc_espan/tb4.png)
+
+### Regresión 
+```{r descriptive, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE, results="hide", size="small", tidy=TRUE}
+#results="hide"   para oculatar los resultados (tabla)
+
+hline <- "\\hline"
+newline <- "\\\\"
+var_indep <- "{\\bf Variables Independientes (sin log)} & & & & & \\\\"
+var_dep <- "{\\bf Variables Dependientes} & & & & & \\\\"
+
+
+descriptive <- with(proj, data.frame(Murder.and.nonnegligent.Manslaughter, 
+                                     Legacy.rape..1, 
+                                     Robbery, 
+                                     Aggravated.assault, 
+                                     povert_rate,
+                                     Employ, 
+                                     Gallons.of.ethanol,
+                                     Dummy))
+table1 <- stargazer(descriptive, title="Estadística Descriptiva para las Variables Usadas en el Análisis", 
+                    header=FALSE, 
+                    label="tab:descript",   ### para usar referencias el tab del label tiene que ser diferente del chunk
+          covariate.labels=c("Asesinato", 
+                             "Violación", 
+                             "Robo", 
+                             "Asalto Agravado", 
+                             "Tasa de Desempleo",
+                             "Tasa de pobreza",
+                             "Consumo de Cerveza",
+                             "Ley de Marihuana"), 
+          omit.summary.stat = c("p25", "p75"),
+          digits = 2,
+          style = "qje",
+          star.cutoffs = c(.1, .1, .1), 
+          star.char = c("\\dagger", "\\dagger", "\\dagger"),
+          font.size="small",
+          notes.append = FALSE, 
+          notes.align = "l",
+     #     notes = "\\parbox[t]{\\textwidth}{\\textit{Nota:} Logistic  comment.}")
+          notes = "\\textit{Nota:} Las estadísticas descriptivas corresponden al periodo 1980-2014")
+l_var_ind <- c(hline, var_indep)
+l_var_d <- c(hline, var_dep, hline)
+table1 <- c(table1[a <- 1:9], l_var_ind, table1[-a])
+table1 <- c(table1[a <- 1:16], l_var_d, table1[-a])
+#table1  si se ejecuta puedo ver las lineas para colocar latex
+
+```
+
+```{r maketable1, message=FALSE, warning=FALSE, cache=TRUE, include=FALSE, results="hide", size="small", tidy=TRUE}
+ranef_sd <- function(model, grp){   ##paquete broom para las funciones
+  vc <- as.data.frame(lme4::VarCorr(model))
+  result <- vc$sdcor[ vc$grp == grp]
+  result <- sprintf("%.3f", round(result, 3))
+  return(result)
+}
+
+randomeffect <- "{\\bf Efecto Aleatorio} & & & &  \\\\"
+
+m1 <- lmer(data = proj, 
+           log(Murder.and.nonnegligent.Manslaughter) ~  povert_rate + Employ + unempl_rate + Gallons.of.ethanol + Dummy + (1|Year) + (1|State))
+m1.n <- lmer(data = proj, 
+           log(Murder.and.nonnegligent.Manslaughter) ~  povert_rate + Employ + unempl_rate + Gallons.of.ethanol + Law + (1|Year) + (1|State))
+
+m1f <- data.frame(Variable = rownames(summary(m1)$coef),
+                  Coefficient = summary(m1)$coef[, 1],
+                  SE = summary(m1)$coef[, 2],
+                  modelName = "Homicidio")
+
+m1f.n <- data.frame(Variable = rownames(summary(m1.n)$coef),
+                    Coefficient = summary(m1.n)$coef[, 1],
+                    SE = summary(m1.n)$coef[, 2],
+                    modelName = "Homicidio")
+  
+m2 <- lmer(data = proj, 
+           log(Legacy.rape..1) ~  povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Dummy + (1|Year) + (1|State))
+m2.n <- lmer(data = proj, 
+           log(Legacy.rape..1) ~  povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Law + (1|Year) + (1|State))
+
+
+m2f <- data.frame(Variable = rownames(summary(m2)$coef),
+                  Coefficient = summary(m2)$coef[, 1],
+                  SE = summary(m2)$coef[, 2],
+                  modelName = "Violación")
+
+m2f.n <- data.frame(Variable = rownames(summary(m2.n)$coef),
+                  Coefficient = summary(m2.n)$coef[, 1],
+                  SE = summary(m2.n)$coef[, 2],
+                  modelName = "Violación")
+
+m3 <- lmer(data = proj, 
+           log(Robbery) ~ povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Dummy + (1|Year) + (1|State))
+m3.n <- lmer(data = proj, 
+           log(Robbery) ~ povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Law + (1|Year) + (1|State))
+
+m3f <- data.frame(Variable = rownames(summary(m3)$coef),
+                  Coefficient = summary(m3)$coef[, 1],
+                  SE = summary(m3)$coef[, 2],
+                  modelName = "Robo")
+
+m3f.n <- data.frame(Variable = rownames(summary(m3.n)$coef),
+                  Coefficient = summary(m3.n)$coef[, 1],
+                  SE = summary(m3.n)$coef[, 2],
+                  modelName = "Robo")
+
+m4 <- lmer(data = proj, 
+           log(Aggravated.assault) ~ povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Dummy + (1|Year) + (1|State))
+m4.n <- lmer(data = proj, 
+           log(Aggravated.assault) ~ povert_rate + Employ +unempl_rate + Gallons.of.ethanol + Law +  (1|Year) + (1|State))
+
+m4f <- data.frame(Variable = rownames(summary(m4)$coef),
+                  Coefficient = summary(m4)$coef[, 1],
+                  SE = summary(m4)$coef[, 2],
+                  modelName = "Asalto Agravado")
+
+m4f.n <- data.frame(Variable = rownames(summary(m4.n)$coef),
+                  Coefficient = summary(m4.n)$coef[, 1],
+                  SE = summary(m4.n)$coef[, 2],
+                  modelName = "Asalto Agravado")
+
+row_sd_c <- paste("Desv. Estand. Estados & ", 
+                        ranef_sd(m1.n, "State"), "&", 
+                        ranef_sd(m2.n, "State"), "&",
+                        ranef_sd(m3.n, "State"), "&",
+                        ranef_sd(m4.n, "State"), "\\\\")
+
+row_n_c <- paste("\\# de Estados &",
+                           sapply(lme4::ranef(m1.n),nrow)["State"], "&", 
+                           sapply(lme4::ranef(m2.n),nrow)["State"], "&",
+                           sapply(lme4::ranef(m3.n),nrow)["State"], "&",
+                           sapply(lme4::ranef(m4.n),nrow)["State"], "\\\\")
+
+row_n_y <- paste("\\# de Años &",
+                 sapply(lme4::ranef(m1.n),nrow)["Year"], "&", 
+                 sapply(lme4::ranef(m2.n),nrow)["Year"], "&",
+                 sapply(lme4::ranef(m3.n),nrow)["Year"], "&",
+                 sapply(lme4::ranef(m4.n),nrow)["Year"], "\\\\")
+
+row_sd_y <- paste("Desv. Estand. Años & ", 
+                        ranef_sd(m1.n, "Year"), "&", 
+                        ranef_sd(m2.n, "Year"), "&",
+                        ranef_sd(m3.n, "Year"), "&",
+                        ranef_sd(m4.n, "Year"), "\\\\")
+
+insertres <- c(hline, randomeffect, hline, row_n_c, row_sd_c,
+               newline, row_n_y, row_sd_y, hline)
+
+modelnames <- c("\\\\[-1.8ex] &  &  &  & \\emph{Asalto} \\\\", 
+                "\\\\[-1.8ex] & \\emph{Asesinato} & \\emph{Violación} & \\emph{Robo} & \\emph{Agravado}\\\\ ",
+                "\\\\[-1.8ex] & \\textbf{Modelo 1} & \\textbf{Modelo 2} & \\textbf{Modelo 3} & \\textbf{Modelo 4}\\\\ ")
+
+
+table3 <- stargazer(m1.n, 
+                    m2.n, 
+                    m3.n, 
+                    m4.n, 
+                   style="ajps", header=FALSE,
+                   title="El impacto de la Ley de la Marihuana sobre la Criminalidad",
+                   omit=c("Constant"), model.names=F, dep.var.labels.include = F,
+                   label="tab:mdl",
+                   omit.stat=c("aic","bic", "ll"),
+                   covariate.labels=c("Tasa de Pobreza", "Tasa de Empleo",
+                                      "Tasa de Desemp", "Consumo de Cerveza","Legalización Marihuana"),
+                   digit.separator=",",
+                   notes=c("\\textit{Nota:}  Las siguientes variables se dividieron por 100k: tasa de empleo y consumo de cerveza"),
+                   font.size="small")
+
+table3 <- table3[c(-8)]
+
+table3 <- c(table3[a <- 1:7], modelnames, table3[-a])
+
+table3 <- c(table3[a <- 1:21], insertres, table3[-a])
+
+
+
+```
+
+```{r graph3, eval=TRUE, echo=FALSE, fig.width=6, fig.height=5, cache=TRUE}
+
+Allmodels <- rbind(m1f.n, 
+                   m2f.n, 
+                   m3f.n, 
+                   m4f.n)
+
+interval1 <- -qnorm((1-0.9)/2)  # 90% multiplier
+interval2 <- -qnorm((1-0.95)/2) # 95% multiplier
+Allmodels$Variable <- revalue(Allmodels$Variable,
+                              c("(Intercept)"="Intercept", 
+                                "povert_rate"="Tasa de Pobreza",
+                                "Employ"="Tasa de Empleo",
+                                "unempl_rate"="Tasa de Desempleo",
+                                "Gallons.of.ethanol"="Consumo Cerveza",
+                                "Law"="LM"))
+
+ggplot(Allmodels[Allmodels$Variable == "Tasa de Pobreza" | Allmodels$Variable == "Tasa de Empleo" | Allmodels$Variable == "Tasa de Desempleo" | Allmodels$Variable == "Consumo Cerveza"  | Allmodels$Variable == "LM", ], 
+       aes(colour = modelName, shape=modelName)) +
+  geom_hline(yintercept = 0, colour = gray(1/2), lty = 2) + 
+  geom_linerange(aes(x = Variable, ymin = Coefficient - SE*interval1,
+                     ymax = Coefficient + SE*interval1),
+                 lwd = 1, position = position_dodge(width = 1/2)) + 
+  geom_pointrange(aes(x = Variable, y = Coefficient, ymin = Coefficient - SE*interval2,
+                      ymax = Coefficient + SE*interval2),
+                  lwd = 1/2, position = position_dodge(width = 1/2),
+                  fill = "WHITE") + 
+  coord_flip() + theme_bw() + 
+  #  ggtitle("Coefficient Plot of ") +
+  scale_colour_discrete(name="Tipo de Crimen") + 
+  #scale_colour_grey(name="Tipo de Crimen")    para gris
+  scale_shape_manual(name="Tipo de Crimen", values=c(0, 1, 2, 5, 6, 15, 16, 17, 18, 20)) +
+  theme(title = element_text(face="italic", size=12, hjust=0)) +
+  theme(axis.title.x = element_text(face="plain", size=12, hjust=.5)) +
+  theme(axis.title.y = element_text(face="plain", size=12, hjust=.5)) +
+  theme(legend.title = element_text(face="plain", size=12, hjust=.5)) +
+  labs(caption = "Gráfico realizado por Cristian Carrión") +
+  ggtitle("Coeficientes del Impacto de la LM")
+
+
+
+```
+ 
+ 
+# Conclusiones
+
+### Conclusiones
+
+- La investigación empírica sobre la relación entre las leyes sobre la Marihuana y el crimen son escasas y las consecuencias del consumo de marihuana en el crimen siguen siendo desconocidas. Por lo que al final **no se encontró que la LM tenga un efecto de mejora del crimen** para ninguno de los tipos de delitos analizados.
+- Los resultados se ajustan a la evidencia reciente y se ajustan a la idea de que la legalización de la marihuana puede llevar a una reducción en el consumo de alcohol
+- Los hallazgos actuales también deben tomarse en contexto con la naturaleza de los datos disponibles
+    + No se tienen en cuenta los delitos que no se denunciarona la policía
+    + Al igual que la delincuencia juvenil
+    
+*La reproducción del escrito y láminas se encuentra en* **github-com/cristian1512** 
+
+# Referencias
+
+### Referencias
+
+![](C:/Users/Usuario/Documents/Doc_espan/ref.png)
