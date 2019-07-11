@@ -7,3 +7,5 @@ Ty Steven!!! Donde me apasioné al manejo de software libre.
 
 
 "Compartir es ayudar a los demás"
+
+Cabe recalcar que este repositorio es de un trabajo de final Universitario y no es ninguna publicacion realizada en algún paper.
