@@ -3,7 +3,7 @@ El Efecto de la Legalización de la Marihuana sobre la Criminalidad en los Estad
 
 Para mayor información sobre los templates tanto para el informe como para el beamer recomiendo el perfil del profesor Steven V. Miller (github.com/svmiller), al igual el manejo de código r como en Latex.
 
-Ty Steven!!! Donde me apasioné al manejo de software libre. @cristian1512
+Ty Steven!!! Donde me apasioné al manejo de software libre.
 
 
 "Compartir es ayudar a los demás"
