@@ -135,9 +135,9 @@ ggplot(m_plot, aes(x = Year, y = Observaciones)) +
 
 ## Datos y Medidas
 
-### Variable Dependiente
+### Variables Dependientes
 
-Los datos sobre los cinco delitos (Asesinato y homicidio no negligente, Violación, Robo y Asalto agravado) entre 1980 y 2014 se obtuvieron del *FBI’s Uniform Crime Reporting* [(UCR)](https://bjs.gov/). Todos los datos se recopilaron para cada uno de los 50 estados de EE.UU. A lo largo del período de tiempo de 24 años para un total de N = 1785. 
+Los datos sobre los cuatro delitos (Asesinato y homicidio no negligente, Violación, Robo y Asalto agravado) entre 1980 y 2014 se obtuvieron del *FBI’s Uniform Crime Reporting* [(UCR)](https://bjs.gov/). Todos los datos se recopilaron para cada uno de los 50 estados de EE.UU. A lo largo del período de tiempo de 24 años para un total de N = 1785. 
 
 ### Variable Independiente
 
@@ -238,7 +238,7 @@ cat(table1, sep='\n')
 
 ## Plan de Análisis
 
-Para identificar el efecto de la LM en el crimen, usamos un diseño de panel de efectos aleatorios, que explota la variación dentro del estado introducida por la LM en 50 estados durante el período de observación de 22 años con la depuración de los datos perdidos como se observa en el Cuadro \ref{tab:misst}. Esto permite evaluar si los estados que adoptaron la LM experimentaron cambios en la tendencia de la delincuencia al analizar las tasas de delincuencia a lo largo del tiempo y comparar esos cambios con las tendencias de la tasa de criminalidad entre los estados que no aprobaron la LM. Además, también incluimos "efectos aleatorios por año", que capturan cualquier influencia nacional sobre el crimen que no se refleja en ninguna de las variables explicativas que varían con el tiempo. Los errores estándar robustos se agrupan a nivel estatal para evitar errores estándar sesgados debido a la no independencia de los puntos de datos a lo largo del tiempo[@Morris2014].
+Para identificar el efecto de la LM en el crimen, se usará un diseño de panel de efectos aleatorios, que explota la variación dentro del estado introducida por la LM en 50 estados durante el período de observación de 22 años con la depuración de los datos perdidos como se observa en el Cuadro \ref{tab:misst}. Esto permite evaluar si los estados que adoptaron la LM experimentaron cambios en la tendencia de la delincuencia al analizar las tasas de delincuencia a lo largo del tiempo y comparar esos cambios con las tendencias de la tasa de criminalidad entre los estados que no aprobaron la LM. Además, también incluimos "efectos aleatorios por año", que capturan cualquier influencia nacional sobre el crimen que no se refleja en ninguna de las variables explicativas que varían con el tiempo. Los errores estándar robustos se agrupan a nivel estatal para evitar errores estándar sesgados debido a la no independencia de los puntos de datos a lo largo del tiempo[@Morris2014].
 
 
 ```{r summiss, eval=TRUE, echo=FALSE, tidy = TRUE, size="small", cache=TRUE, results="asis", warning=F}
@@ -247,7 +247,7 @@ rownames(Miss) <- c()
 Miss <- subset(Miss, !(var == "Year" | var == "State" | var == "Population" | var == "Revised.rape..2"  | var == "Revised.rape..2"  | var == "Law"  | var == "Fips"  | var == "Revised.rape..2" | var == "Violent.crime.total" | var == "Type"))
 Miss$miss <- with(Miss, paste(sprintf("%.2f", round(miss*100, 2)),"%", sep=""))
 Miss$var <- c("Homicidio", "Violación", "Robo", "Asalto Agravado",
-              "Tasa de Pobreza", "Tasa de Empleo", "Tasa de Desempleo", "Galones de cerbeza per capita", 
+              "Tasa de Pobreza", "Tasa de Empleo", "Tasa de Desempleo", "Galones de cerveza per capita", 
               "Post-Ley")
 Misst <- capture.output(
   stargazer(Miss, type="latex", label="tab:misst", summary=FALSE, rownames=F, 
